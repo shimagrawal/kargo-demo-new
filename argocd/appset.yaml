@@ -1,0 +1,37 @@
+# One Application per Stage, each on its own cluster, tracking the stage/<stage> branch rendered by Kargo.
+# Apply to the Akuity Argo CD instance the Kargo agent is connected to.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: kargo-demo
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions:
+  - missingkey=error
+  generators:
+  - list:
+      elements:
+      - stage: dev
+        cluster: kargo-quickstart
+      - stage: staging
+        cluster: cluster-uat
+      - stage: prod
+        cluster: cluster-prod
+  template:
+    metadata:
+      name: kargo-demo-{{ .stage }}
+      annotations:
+        kargo.akuity.io/authorized-stage: kargo-demo:{{ .stage }}
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/shimagrawal/kargo-demo-new.git
+        targetRevision: stage/{{ .stage }}
+        path: .
+      destination:
+        name: '{{ .cluster }}'
+        namespace: kargo-demo
+      syncPolicy:
+        syncOptions:
+        - CreateNamespace=true

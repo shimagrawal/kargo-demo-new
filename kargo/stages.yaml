@@ -4,11 +4,11 @@ metadata:
   name: dev
   namespace: kargo-demo
   labels:
-    kargo.akuity.io/shard: self-hosted-prod
+    kargo.akuity.io/shard: self-hosted
   annotations:
     kargo.akuity.io/color: green
 spec:
-  shard: self-hosted-prod
+  shard: self-hosted
   requestedFreight:
   - origin:
       kind: Warehouse
@@ -36,11 +36,11 @@ metadata:
   name: staging
   namespace: kargo-demo
   labels:
-    kargo.akuity.io/shard: self-hosted-prod
+    kargo.akuity.io/shard: self-hosted-uat
   annotations:
     kargo.akuity.io/color: amber
 spec:
-  shard: self-hosted-prod
+  shard: self-hosted-uat
   requestedFreight:
   - origin:
       kind: Warehouse

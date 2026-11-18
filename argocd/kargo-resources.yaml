@@ -1,0 +1,26 @@
+# Syncs this repo's kargo/ directory (Project, Warehouse, PromotionTask, Stages) into the Kargo instance,
+# which is registered in Argo CD as the kargo-resources cluster.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kargo-demo-kargo-resources
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/shimagrawal/kargo-demo-new.git
+    targetRevision: main
+    path: kargo
+    directory:
+      include: '*.yaml'
+  destination:
+    name: kargo-resources
+  syncPolicy:
+    automated:
+      prune: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 2m

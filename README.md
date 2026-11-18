@@ -17,7 +17,8 @@ branch and syncs the `kargo-demo-<stage>` Argo CD Application.
 |---|---|
 | `app/` | Kustomize base and one overlay per Stage |
 | `kargo/` | Project, ProjectConfig (auto-promotion, promotion window), Warehouse, PromotionTask, Stages |
-| `argocd/apps.yaml` | One Argo CD Application per Stage |
+| `argocd/appset.yaml` | ApplicationSet with one Application per Stage, each on its own cluster |
+| `argocd/kargo-resources.yaml` | Application that syncs `kargo/` into the Kargo instance, so the pipeline itself is managed through Git |
 
 ## Setup
 
@@ -56,17 +57,21 @@ To approve by SSO group instead, use `claim: groups` with the group name.
 The Stages use the `trivy-image` custom step from the kargo-custom-steps repo. It must be registered on
 the instance (`kargo/custom-steps/supply-chain/trivy-image/trivy-image.yaml` there).
 
-### 3. Argo CD Applications
+### 3. Argo CD ApplicationSet
 
-Apply to the Akuity Argo CD instance the Kargo agent uses. The destination cluster is `cluster-prod`;
-check the name in the Argo CD UI under Settings → Clusters.
+`argocd/appset.yaml` creates one Application per Stage, each on its own cluster: dev on
+`kargo-quickstart`, staging on `cluster-uat` and prod on `cluster-prod`. Apply it to the Akuity Argo CD
+instance the Kargo agent is connected to, with the Akuity CLI:
 
 ```shell
-argocd login rmf1nsoxkp536y1k.cd.akuity.cloud --sso --grpc-web
-argocd app create -f argocd/apps.yaml --upsert
+akuity login
+akuity argocd apply --name <argo-cd-instance-name> -f argocd/appset.yaml -f argocd/kargo-resources.yaml
 ```
 
-The Applications show an error until the first promotion creates their `stage/<stage>` branch.
+`kargo-demo-kargo-resources` syncs `kargo/` into the Kargo instance (registered in Argo CD as the
+`kargo-resources` cluster). After that, change the pipeline through Git rather than `kargo apply`.
+
+The Applications show a ComparisonError until the first promotion creates their `stage/<stage>` branch.
 
 ### 4. First run
 
@@ -81,9 +86,9 @@ the demo can show `v0.0.2` going through.
 2. **Commit to dev (4 min).** Change `replicas` in `app/stages/dev/kustomization.yaml` and push. A new
    Freight appears, dev promotes it automatically, and the `scan` step's output shows the trivy result.
 3. **Staging (2 min).** Promote to staging. The scan runs again with a stricter severity.
-4. **Change freeze (3 min).** In the ProjectConfig, set `change-freeze` to `disabled: false`
-   (`kargo apply -f kargo/project.yaml`). Promoting to prod is refused with the window's reason. Set it
-   back to `disabled: true`.
+4. **Change freeze (3 min).** In `kargo/project.yaml`, set `change-freeze` to `disabled: false` and push:
+   the freeze is a reviewed commit, synced into Kargo by Argo CD. Promoting to prod is refused with the
+   window's reason. Revert the commit to lift it.
 5. **Approval (5 min).** Promote to prod. The promotion waits at `wait-for-approval`, which only the
    named approver can answer; with SSO groups this would be a release-managers group. Approve with a
    message, e.g. `CHG-1234 approved`. The deployment runs.
