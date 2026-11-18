@@ -1,0 +1,23 @@
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Warehouse
+metadata:
+  name: guestbook
+  namespace: kargo-demo
+  labels:
+    kargo.akuity.io/shard: self-hosted-prod
+spec:
+  shard: self-hosted-prod
+  interval: 2m0s
+  subscriptions:
+  # The application image.
+  - image:
+      repoURL: ghcr.io/akuity/guestbook
+      imageSelectionStrategy: SemVer
+      constraint: ">=0.0.1"
+      discoveryLimit: 5
+  # The application manifests, so every Freight carries the exact source commit.
+  - git:
+      repoURL: https://github.com/shimagrawal/kargo-demo-new.git
+      branch: main
+      includePaths:
+      - app

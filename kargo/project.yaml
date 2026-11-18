@@ -1,0 +1,25 @@
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Project
+metadata:
+  name: kargo-demo
+---
+apiVersion: kargo.akuity.io/v1alpha1
+kind: ProjectConfig
+metadata:
+  name: kargo-demo
+  namespace: kargo-demo
+spec:
+  promotionPolicies:
+  - stageSelector:
+      name: dev
+    autoPromotionEnabled: true
+  promotionWindows:
+  # Change freeze for prod. Off by default; set disabled: false during the demo to show prod being blocked.
+  - name: change-freeze
+    description: Year-end change freeze for production
+    disabled: true
+    kind: Deny
+    stageSelector:
+      name: prod
+    dtstart: "20261101T000000Z"
+    dtend: "20270101T000000Z"

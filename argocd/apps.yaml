@@ -1,0 +1,61 @@
+# Argo CD Applications for the three stages, one per stage/<stage> branch rendered by Kargo.
+# Apply to the Akuity Argo CD instance the Kargo agent is connected to.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kargo-demo-dev
+  namespace: argocd
+  annotations:
+    kargo.akuity.io/authorized-stage: kargo-demo:dev
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/shimagrawal/kargo-demo-new.git
+    targetRevision: stage/dev
+    path: .
+  destination:
+    name: cluster-prod
+    namespace: kargo-demo-dev
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kargo-demo-staging
+  namespace: argocd
+  annotations:
+    kargo.akuity.io/authorized-stage: kargo-demo:staging
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/shimagrawal/kargo-demo-new.git
+    targetRevision: stage/staging
+    path: .
+  destination:
+    name: cluster-prod
+    namespace: kargo-demo-staging
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kargo-demo-prod
+  namespace: argocd
+  annotations:
+    kargo.akuity.io/authorized-stage: kargo-demo:prod
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/shimagrawal/kargo-demo-new.git
+    targetRevision: stage/prod
+    path: .
+  destination:
+    name: cluster-prod
+    namespace: kargo-demo-prod
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=true

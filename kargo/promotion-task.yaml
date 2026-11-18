@@ -1,0 +1,56 @@
+# Renders the stage's overlay with the Freight's image and commit, pushes it to the stage/<stage>
+# branch and syncs the stage's Argo CD Application.
+apiVersion: kargo.akuity.io/v1alpha1
+kind: PromotionTask
+metadata:
+  name: deploy
+  namespace: kargo-demo
+spec:
+  vars:
+  - name: gitRepo
+    value: https://github.com/shimagrawal/kargo-demo-new.git
+  - name: imageRepo
+    value: ghcr.io/akuity/guestbook
+  steps:
+  - uses: git-clone
+    config:
+      repoURL: ${{ vars.gitRepo }}
+      checkout:
+      - commit: ${{ commitFrom(vars.gitRepo).ID }}
+        path: ./src
+      - branch: stage/${{ ctx.stage }}
+        create: true
+        path: ./out
+  - uses: git-clear
+    config:
+      path: ./out
+  - uses: kustomize-set-image
+    config:
+      path: ./src/app/stages/${{ ctx.stage }}
+      images:
+      - image: ${{ vars.imageRepo }}
+        digest: ${{ imageFrom(vars.imageRepo).Digest }}
+  - uses: kustomize-build
+    config:
+      path: ./src/app/stages/${{ ctx.stage }}
+      outPath: ./out
+  - uses: git-commit
+    as: commit
+    config:
+      path: ./out
+      message: |
+        Deploy ${{ vars.imageRepo }}:${{ imageFrom(vars.imageRepo).Tag }} to ${{ ctx.stage }}
+
+        Source commit: ${{ commitFrom(vars.gitRepo).ID }}
+        Image digest: ${{ imageFrom(vars.imageRepo).Digest }}
+        Freight: ${{ ctx.targetFreight.name }}
+  - uses: git-push
+    config:
+      path: ./out
+  - uses: argocd-update
+    config:
+      apps:
+      - name: kargo-demo-${{ ctx.stage }}
+        sources:
+        - repoURL: ${{ vars.gitRepo }}
+          desiredRevision: ${{ task.outputs['commit'].commit }}

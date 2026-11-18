@@ -1,0 +1,110 @@
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Stage
+metadata:
+  name: dev
+  namespace: kargo-demo
+  labels:
+    kargo.akuity.io/shard: self-hosted-prod
+  annotations:
+    kargo.akuity.io/color: green
+spec:
+  shard: self-hosted-prod
+  requestedFreight:
+  - origin:
+      kind: Warehouse
+      name: guestbook
+    sources:
+      direct: true
+  promotionTemplate:
+    spec:
+      vars:
+      - name: imageRepo
+        value: ghcr.io/akuity/guestbook
+      steps:
+      # Security gate: block images with fixable CRITICAL vulnerabilities.
+      - uses: trivy-image
+        as: scan
+        config:
+          image: ${{ vars.imageRepo + "@" + imageFrom(vars.imageRepo).Digest }}
+          severity: CRITICAL
+      - task:
+          name: deploy
+---
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Stage
+metadata:
+  name: staging
+  namespace: kargo-demo
+  labels:
+    kargo.akuity.io/shard: self-hosted-prod
+  annotations:
+    kargo.akuity.io/color: amber
+spec:
+  shard: self-hosted-prod
+  requestedFreight:
+  - origin:
+      kind: Warehouse
+      name: guestbook
+    sources:
+      stages:
+      - dev
+  promotionTemplate:
+    spec:
+      vars:
+      - name: imageRepo
+        value: ghcr.io/akuity/guestbook
+      steps:
+      - uses: trivy-image
+        as: scan
+        config:
+          image: ${{ vars.imageRepo + "@" + imageFrom(vars.imageRepo).Digest }}
+          severity: CRITICAL,HIGH
+      - task:
+          name: deploy
+---
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Stage
+metadata:
+  name: prod
+  namespace: kargo-demo
+  labels:
+    kargo.akuity.io/shard: self-hosted-prod
+  annotations:
+    kargo.akuity.io/color: red
+spec:
+  shard: self-hosted-prod
+  requestedFreight:
+  - origin:
+      kind: Warehouse
+      name: guestbook
+    sources:
+      stages:
+      - staging
+  promotionTemplate:
+    spec:
+      steps:
+      # Separation of duties: a release manager has to approve every prod promotion.
+      - uses: wait-for-approval
+        as: approve
+        config:
+          minApprovals: 1
+          approvers:
+          - claim: groups
+            value: kargo-release-managers
+            required: true
+      - uses: record-audit-event
+        config:
+          type: approved
+          actor: ${{ outputs['approve'].responses[0].user }}
+          message: Release ${{ ctx.targetFreight.name }} approved for ${{ ctx.stage }}
+          data:
+            freight: ${{ ctx.targetFreight.name }}
+            approval: ${{ outputs['approve'].responses[0].message ?? "" }}
+      - task:
+          name: deploy
+      - uses: record-audit-event
+        config:
+          type: deployed
+          message: Release ${{ ctx.targetFreight.name }} deployed to ${{ ctx.stage }}
+          data:
+            freight: ${{ ctx.targetFreight.name }}
