@@ -23,6 +23,9 @@ spec:
                 - -c
                 - |
                   echo "Checking http://guestbook.kargo-demo.svc.cluster.local/"
-                  curl -sSf -o /dev/null --max-time 5 --retry 12 --retry-delay 5 --retry-all-errors \
-                    http://guestbook.kargo-demo.svc.cluster.local/
+                  if ! curl -sSf -o /dev/null --max-time 5 --retry 12 --retry-delay 5 --retry-all-errors \
+                    http://guestbook.kargo-demo.svc.cluster.local/; then
+                    echo "guestbook is not serving"
+                    exit 1
+                  fi
                   echo "guestbook is serving"
