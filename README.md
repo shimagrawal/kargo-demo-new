@@ -7,7 +7,7 @@ trail.
 Warehouse (guestbook image + this repo's app/ commits)
   └─► dev       auto-promotion · trivy-image scan (CRITICAL)
        └─► staging   trivy-image scan (CRITICAL, HIGH)
-            └─► prod      change-freeze window · wait-for-approval (kargo-release-managers) · audit events
+            └─► prod      change-freeze window · wait-for-approval (named approver) · audit events
 ```
 
 Each Stage renders `app/stages/<stage>` with the Freight's image digest, pushes it to the `stage/<stage>`
@@ -36,16 +36,7 @@ gh repo create shimagrawal/kargo-demo-new --public --source . --push
 If you use another name, replace `https://github.com/shimagrawal/kargo-demo-new.git` in
 `kargo/` and `argocd/`.
 
-### 2. Okta groups and users
-
-In the Okta admin console:
-
-- Create the groups `kargo-developers` and `kargo-release-managers`.
-- Put a developer user in `kargo-developers` and an approver user in `kargo-release-managers`.
-- Configure Okta SSO for the Kargo instance, with a `groups` claim:
-  https://docs.akuity.io/kargo/managing-instances/settings/security-and-access/sso/okta
-
-### 3. Kargo resources
+### 2. Kargo resources
 
 ```shell
 kargo login https://gaq379139gqc393z.kargo.akuity.cloud --sso
@@ -57,16 +48,15 @@ kargo apply -f kargo/
 kargo create repo-credentials --project=kargo-demo github \
   --git --repo-url=https://github.com/shimagrawal/kargo-demo-new.git \
   --username=shimagrawal
-
-# Map the Okta groups to the project's default roles.
-kargo grant --project=kargo-demo --role=kargo-promoter --claim=groups=kargo-developers
-kargo grant --project=kargo-demo --role=kargo-admin --claim=groups=kargo-release-managers
 ```
+
+Only the user in the prod Stage's `approvers` rule (an `email` claim) can approve prod promotions.
+To approve by SSO group instead, use `claim: groups` with the group name.
 
 The Stages use the `trivy-image` custom step from the kargo-custom-steps repo. It must be registered on
 the instance (`kargo/custom-steps/supply-chain/trivy-image/trivy-image.yaml` there).
 
-### 4. Argo CD Applications
+### 3. Argo CD Applications
 
 Apply to the Akuity Argo CD instance the Kargo agent uses. The destination cluster is `cluster-prod`;
 check the name in the Argo CD UI under Settings → Clusters.
@@ -78,7 +68,7 @@ argocd app create -f argocd/apps.yaml --upsert
 
 The Applications show an error until the first promotion creates their `stage/<stage>` branch.
 
-### 5. First run
+### 4. First run
 
 The Warehouse discovers `v0.0.2` and the latest commit, and dev promotes itself. Promote to staging
 and prod once before the demo to check the whole path, then promote `v0.0.1` back to every Stage so
@@ -94,10 +84,9 @@ the demo can show `v0.0.2` going through.
 4. **Change freeze (3 min).** In the ProjectConfig, set `change-freeze` to `disabled: false`
    (`kargo apply -f kargo/project.yaml`). Promoting to prod is refused with the window's reason. Set it
    back to `disabled: true`.
-5. **Approval and RBAC (5 min).**
-   - As the developer, promote to prod. The promotion waits at `wait-for-approval`. The developer
-     can't approve it.
-   - As the release manager, approve with a message, e.g. `CHG-1234 approved`. The deployment runs.
+5. **Approval (5 min).** Promote to prod. The promotion waits at `wait-for-approval`, which only the
+   named approver can answer; with SSO groups this would be a release-managers group. Approve with a
+   message, e.g. `CHG-1234 approved`. The deployment runs.
 6. **Traceability and audit (4 min).**
    - The promotion's steps show who approved, the commit Kargo pushed to `stage/prod` and the Argo CD
      sync.

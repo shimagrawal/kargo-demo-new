@@ -89,8 +89,8 @@ spec:
         config:
           minApprovals: 1
           approvers:
-          - claim: groups
-            value: kargo-release-managers
+          - claim: email
+            value: shivam.agrawal@akuity.io
             required: true
       - uses: record-audit-event
         config:
