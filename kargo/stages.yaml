@@ -17,16 +17,10 @@ spec:
       direct: true
   promotionTemplate:
     spec:
-      vars:
-      - name: imageRepo
-        value: ghcr.io/akuity/guestbook
       steps:
-      # Security gate: block images with fixable CRITICAL vulnerabilities.
-      - uses: trivy-image
-        as: scan
-        config:
-          image: ${{ vars.imageRepo + "@" + imageFrom(vars.imageRepo).Digest }}
-          severity: CRITICAL
+      # Security gate: block images with fixable CRITICAL vulnerabilities not accepted in app/.trivyignore.
+      - task:
+          name: scan
       - task:
           name: deploy
 ---
@@ -50,17 +44,15 @@ spec:
       - dev
   promotionTemplate:
     spec:
-      vars:
-      - name: imageRepo
-        value: ghcr.io/akuity/guestbook
       steps:
-      - uses: trivy-image
-        as: scan
-        config:
-          image: ${{ vars.imageRepo + "@" + imageFrom(vars.imageRepo).Digest }}
-          severity: CRITICAL,HIGH
+      - task:
+          name: scan
       - task:
           name: deploy
+  # A failed smoke test triggers the auto-rollback configured in the ProjectConfig.
+  verification:
+    analysisTemplates:
+    - name: smoke-test
 ---
 apiVersion: kargo.akuity.io/v1alpha1
 kind: Stage
@@ -83,6 +75,9 @@ spec:
   promotionTemplate:
     spec:
       steps:
+      # Scan before asking for approval, so approvers only see releases that passed the gate.
+      - task:
+          name: scan
       # Separation of duties: a release manager has to approve every prod promotion.
       - uses: wait-for-approval
         as: approve

@@ -1,0 +1,28 @@
+# Verification for a Stage: checks that guestbook answers over its Service. The Job runs on the Stage's
+# shard cluster (in the Kargo agent's namespace), the same cluster the Stage deploys to.
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: smoke-test
+  namespace: kargo-demo
+spec:
+  metrics:
+  - name: http-check
+    provider:
+      job:
+        spec:
+          backoffLimit: 0
+          template:
+            spec:
+              restartPolicy: Never
+              containers:
+              - name: http-check
+                image: curlimages/curl:8.11.1
+                command:
+                - sh
+                - -c
+                - |
+                  echo "Checking http://guestbook.kargo-demo.svc.cluster.local/"
+                  curl -sSf -o /dev/null --max-time 5 --retry 12 --retry-delay 5 --retry-all-errors \
+                    http://guestbook.kargo-demo.svc.cluster.local/
+                  echo "guestbook is serving"

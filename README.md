@@ -5,9 +5,9 @@ trail.
 
 ```
 Warehouse (guestbook image + this repo's app/ commits)
-  └─► dev       auto-promotion · trivy-image scan (CRITICAL)
-       └─► staging   trivy-image scan (CRITICAL, HIGH)
-            └─► prod      change-freeze window · wait-for-approval (named approver) · audit events
+  └─► dev       auto-promotion · trivy scan
+       └─► staging   trivy scan · smoke test · auto-rollback
+            └─► prod      trivy scan · change-freeze window · wait-for-approval (named approver) · audit events
 ```
 
 Each Stage renders `app/stages/<stage>` with the Freight's image digest, pushes it to the `stage/<stage>`
@@ -79,20 +79,27 @@ The Warehouse discovers `v0.0.2` and the latest commit, and dev promotes itself.
 and prod once before the demo to check the whole path, then promote `v0.0.1` back to every Stage so
 the demo can show `v0.0.2` going through.
 
-## Demo script (about 20 minutes)
+## Demo script (about 25 minutes)
 
 1. **Pipeline (2 min).** Show the graph, the Warehouse and the Freight timeline. Open a Freight: it
    holds the image digest and the source commit.
-2. **Commit to dev (4 min).** Change `replicas` in `app/stages/dev/kustomization.yaml` and push. A new
-   Freight appears, dev promotes it automatically, and the `scan` step's output shows the trivy result.
-3. **Staging (2 min).** Promote to staging. The scan runs again with a stricter severity.
-4. **Change freeze (3 min).** In `kargo/project.yaml`, set `change-freeze` to `disabled: false` and push:
+2. **Security gate (5 min).** Before the demo, remove the entries from `app/.trivyignore` and push. dev
+   blocks the image: the `scan` task lists the CRITICAL CVEs. Then add the entries back with a reason,
+   ticket and expiry date, and push. The risk exception is a reviewed commit: it creates new Freight, and
+   dev now passes. The Freight shows both the image digest and that commit.
+3. **Staging (2 min).** Promote to staging. The scan runs again, on the staging cluster's Kargo agent,
+   and the `smoke-test` verification checks that guestbook answers. The Freight is now verified.
+4. **Auto-rollback (4 min).** Push a bad change: set `targetPort: 8080` in `app/base/service.yaml` (guestbook
+   listens on 3000). The new Freight passes dev, which has no verification. Promote it to staging: the
+   smoke test fails, and Kargo promotes the last verified Freight to staging again on its own. Revert the
+   commit afterwards.
+5. **Change freeze (3 min).** In `kargo/project.yaml`, set `change-freeze` to `disabled: false` and push:
    the freeze is a reviewed commit, synced into Kargo by Argo CD. Promoting to prod is refused with the
    window's reason. Revert the commit to lift it.
-5. **Approval (5 min).** Promote to prod. The promotion waits at `wait-for-approval`, which only the
+6. **Approval (5 min).** Promote to prod. The promotion waits at `wait-for-approval`, which only the
    named approver can answer; with SSO groups this would be a release-managers group. Approve with a
    message, e.g. `CHG-1234 approved`. The deployment runs.
-6. **Traceability and audit (4 min).**
+7. **Traceability and audit (4 min).**
    - The promotion's steps show who approved, the commit Kargo pushed to `stage/prod` and the Argo CD
      sync.
    - The `stage/prod` commit message names the source commit, image digest and Freight.

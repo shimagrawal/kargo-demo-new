@@ -1,0 +1,29 @@
+# Security gate: scans the Freight's image with trivy and blocks fixable vulnerabilities of the given
+# severity. Vulnerabilities accepted as a risk are listed in app/.trivyignore at the Freight's commit, so
+# every exception is a reviewed commit.
+apiVersion: kargo.akuity.io/v1alpha1
+kind: PromotionTask
+metadata:
+  name: scan
+  namespace: kargo-demo
+spec:
+  vars:
+  - name: gitRepo
+    value: https://github.com/shimagrawal/kargo-demo-new.git
+  - name: imageRepo
+    value: ghcr.io/akuity/guestbook
+  - name: severity
+    value: CRITICAL
+  steps:
+  - uses: git-clone
+    config:
+      repoURL: ${{ vars.gitRepo }}
+      checkout:
+      - commit: ${{ commitFrom(vars.gitRepo).ID }}
+        path: ./policy
+  - uses: trivy-image
+    as: trivy
+    config:
+      image: ${{ vars.imageRepo + "@" + imageFrom(vars.imageRepo).Digest }}
+      severity: ${{ vars.severity }}
+      ignorefile: policy/app/.trivyignore

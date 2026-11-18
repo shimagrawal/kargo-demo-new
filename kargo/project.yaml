@@ -16,6 +16,12 @@ spec:
   - stageSelector:
       name: dev
     autoPromotionEnabled: true
+  # When staging's verification fails, promote the last verified Freight again.
+  - stageSelector:
+      name: staging
+    autoRollback:
+      onVerification:
+      - Failed
   promotionWindows:
   # Change freeze for prod. Off by default; set disabled: false during the demo to show prod being blocked.
   - name: change-freeze
