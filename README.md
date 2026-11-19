@@ -50,8 +50,8 @@ Warehouse "guestbook"
 | Traceability | Freight pins the image digest and commit; every stage branch commit names its source | Warehouse and `deploy` task |
 | Pipeline as code | Argo CD syncs `kargo/` into Kargo, so every pipeline change, including a freeze, goes through Git | `argocd/kargo-resources.yaml` |
 
-Approvals are limited to one person by their `email` claim. With SSO groups, use `claim: groups` with a
-group name instead, for example a release managers group.
+Approvals are limited to one named approver (the `email` claim). To allow an SSO group instead, use
+`claim: groups` with the group name, for example a release managers group.
 
 ## Repository layout
 
