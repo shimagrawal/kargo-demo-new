@@ -15,7 +15,9 @@ spec:
   - name: severity
     value: CRITICAL
   steps:
+  # A rollback promotes Freight that already passed the scan, so both steps are skipped then.
   - uses: git-clone
+    if: ${{ !ctx.meta.promotion.rollback }}
     config:
       repoURL: ${{ vars.gitRepo }}
       checkout:
@@ -23,6 +25,7 @@ spec:
         path: ./policy
   - uses: trivy-image
     as: trivy
+    if: ${{ !ctx.meta.promotion.rollback }}
     config:
       image: ${{ vars.imageRepo + "@" + imageFrom(vars.imageRepo).Digest }}
       severity: ${{ vars.severity }}

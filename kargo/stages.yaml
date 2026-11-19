@@ -45,10 +45,8 @@ spec:
   promotionTemplate:
     spec:
       steps:
-      # A rollback promotes Freight that already passed the scan, so skip it then.
       - task:
           name: scan
-        if: ${{ !ctx.meta.promotion.rollback }}
       - task:
           name: deploy
   # A failed smoke test triggers the auto-rollback configured in the ProjectConfig.
