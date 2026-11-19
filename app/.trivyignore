@@ -2,7 +2,7 @@
 # date, after which the scan blocks the image again.
 
 # Go standard library. Accepted until the image is rebuilt with a patched Go release (SEC-101).
-CVE-2025-68121 exp:2026-12-31
+CVE-2025-68121 exp:2026-11-01
 
 # OpenSSL (libcrypto3, libssl3). Not reachable from the app; accepted until the base image is updated (SEC-102).
-CVE-2026-31789 exp:2026-12-31
+CVE-2026-31789 exp:2026-11-01
