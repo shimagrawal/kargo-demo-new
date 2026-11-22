@@ -11,7 +11,7 @@ spec:
     metadata:
       labels:
         app: guestbook
-        release: "2026.11.4"
+        release: "2026.11.5"
     spec:
       containers:
       - name: guestbook
