@@ -5,6 +5,12 @@ One commit goes from Git to production through Kargo: it is **scanned** for vuln
 for production, and **recorded** in the audit log. Production can be **frozen**. All of it is defined in
 this repo.
 
+## What is Kargo?
+
+[Kargo](https://kargo.io) orchestrates **promotion**: moving a release from one environment to the next.
+Argo CD keeps each cluster in sync with Git; Kargo decides **what** goes **where**, **when**, and **on
+which conditions**.
+
 ## What this demo shows
 
 | | Feature | What you see |
