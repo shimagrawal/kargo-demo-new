@@ -17,7 +17,6 @@ How to combine **automated delivery with security and release controls**:
 
 - Promote each release (image digest + Git commit) automatically to dev.
 - Scan every release with Trivy, run as a Kargo **custom promotion step**.
-- Keep accepted vulnerabilities in Git, with expiry dates.
 - Smoke-test staging and roll back automatically on failure.
 - Freeze prod, require a named approver, and audit every release.
 - Use SSO and RBAC: developers promote, only approvers release to prod.
