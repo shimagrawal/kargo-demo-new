@@ -11,20 +11,38 @@ this repo.
 Argo CD keeps each cluster in sync with Git; Kargo decides **what** goes **where**, **when**, and **on
 which conditions**.
 
-## What this demo shows
+## What This Demonstrates
 
-| | Feature | What you see |
-|---|---|---|
-| 📦 | **Traceable releases** | A release (Freight) pins the image digest and the Git commit together, and that exact pair moves through every environment |
-| 🔒 | **Security gate** | Every promotion scans the image with Trivy and blocks on fixable CRITICAL vulnerabilities |
-| 📝 | **Risk exceptions as code** | Accepted vulnerabilities live in `app/.trivyignore` with a reason, a ticket and an expiry date. When one expires, the gate blocks again |
-| ✅ | **Verification** | After each promotion to staging, a smoke test checks the app answers. A failed release can't reach prod |
-| ↩️ | **Automatic rollback** | When the staging smoke test fails, Kargo puts the last good release back by itself |
-| 🙋 | **Release approval** | Developers can promote, but every prod promotion waits for a named approver |
-| 🧾 | **Audit trail** | Approvals and deployments are recorded in the Akuity Platform audit log |
-| ❄️ | **Change freeze** | A promotion window can close prod. It blocks every promotion, including automatic ones |
-| 👥 | **SSO and RBAC** | Users log in with Okta. The `kargo-developers` group can promote; only the approver can approve prod |
-| 🧬 | **Pipeline as code** | Argo CD syncs `kargo/` into Kargo, so every pipeline change, even a freeze, is a reviewed commit |
+How to combine **automated delivery with security and release controls**:
+
+- Promote each release (image digest + Git commit) automatically to dev.
+- Scan every release with Trivy, run as a Kargo **custom promotion step**.
+- Keep accepted vulnerabilities in Git, with expiry dates.
+- Smoke-test staging and roll back automatically on failure.
+- Freeze prod, require a named approver, and audit every release.
+- Use SSO and RBAC: developers promote, only approvers release to prod.
+
+**Kargo orchestrates the promotion, Git is the source of truth, and Argo CD deploys to each cluster.**
+
+## End-to-End Flow
+
+```text
+Commit to app/ (or new image)
+   │
+   ▼
+Warehouse → Freight (image digest + Git commit)
+   │
+   ▼
+dev       scan → deploy                                  (automatic)
+   │
+   ▼
+staging   scan → deploy → smoke test                     (fails → auto-rollback)
+   │
+   ▼
+prod      freeze check → scan → approval → deploy → audit
+```
+
+Each deploy renders the manifests, commits them to `stage/<env>`, and Argo CD syncs that cluster.
 
 ## Environments
 
@@ -37,27 +55,6 @@ which conditions**.
 The Stage names are the environments. The cluster and agent names are the existing names of the
 clusters they run on: for example, the **staging** Stage deploys to the cluster registered in Argo CD as
 `cluster-uat`.
-
-## How it works
-
-```
-commit to app/  or  new guestbook image
-            │
-            ▼
-Warehouse ──► Freight (image digest + Git commit)
-            │
-            ▼
-  dev ──► staging ──► prod
-  each promotion:  scan ──► render manifests ──► commit to stage/<stage> ──► Argo CD sync
-```
-
-1. The **Warehouse** watches the guestbook image and the `app/` folder, and creates Freight when either
-   changes.
-2. Each **promotion** runs two tasks: `scan` (Trivy) and `deploy` (render the Stage's Kustomize overlay
-   with the image digest, commit it to the `stage/<stage>` branch, sync the Stage's Argo CD Application).
-3. Each Stage's promotion runs on the Kargo agent of the cluster it deploys to.
-4. **Staging** is verified after every promotion; a failure triggers the automatic rollback.
-5. **Prod** checks the freeze window, waits for approval and records audit events.
 
 ## Demo scenes
 
