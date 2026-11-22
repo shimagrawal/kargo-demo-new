@@ -15,6 +15,7 @@ which conditions**.
 
 How to combine **automated delivery with security and release controls**:
 
+- Promote the same release across environments (dev → staging → prod).
 - Promote each release (image digest + Git commit) automatically to dev.
 - Scan every release with Trivy, run as a Kargo **custom promotion step**.
 - Smoke-test staging and roll back automatically on failure.
