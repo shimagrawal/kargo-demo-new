@@ -30,19 +30,23 @@ How to combine **automated delivery with security and release controls**:
 Commit to app/ (or new image)
    │
    ▼
-Warehouse → Freight (image digest + Git commit)
+Warehouse creates Freight (image digest + Git commit)
    │
    ▼
-dev       scan → deploy                                  (automatic)
+dev (automatic)
+   └── Trivy scan → deploy
    │
    ▼
-staging   scan → deploy → smoke test                     (fails → auto-rollback)
+staging
+   └── Trivy scan → deploy → smoke test   (fails → auto-rollback)
    │
    ▼
-prod      freeze check → scan → approval → deploy → audit
+prod
+   └── freeze check → Trivy scan → approval → deploy → audit
 ```
 
-Each deploy renders the manifests, commits them to `stage/<env>`, and Argo CD syncs that cluster.
+Each deploy renders the manifests, commits them to `stage/<env>`, and Argo CD syncs that environment's
+cluster.
 
 ## Environments
 
