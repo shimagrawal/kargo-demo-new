@@ -26,7 +26,7 @@ spec:
   # Change freeze for prod. Off by default; set disabled: false during the demo to show prod being blocked.
   - name: change-freeze
     description: Year-end change freeze for production
-    disabled: true
+    disabled: false
     kind: Deny
     stageSelector:
       name: prod
