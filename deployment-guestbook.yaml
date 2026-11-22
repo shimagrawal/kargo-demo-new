@@ -13,7 +13,7 @@ spec:
     metadata:
       labels:
         app: guestbook
-        release: 2026.11.3
+        release: 2026.11.5
     spec:
       containers:
       - image: ghcr.io/akuity/guestbook@sha256:faae7216af7e9b22e5a1f7961d9c3d89a4206727363b06f6eeb9622b00f7dc19
